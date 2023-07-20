@@ -1,6 +1,6 @@
 -- File: update_price.sql
 
--- Initialize variables
+-- Declare variables
 DECLARE @productId INT,
         @productName VARCHAR(255),
         @productCost DECIMAL(10,2),
@@ -11,10 +11,26 @@ DECLARE @productId INT,
         @errorState INT,
         @errorMessage VARCHAR(4000)
 
--- Initialize a cursor to fetch each product
+-- Create a temporary table to hold products data
+IF OBJECT_ID('tempdb..#products') IS NOT NULL
+    DROP TABLE #products
+
+CREATE TABLE #products (
+    product_id INT,
+    product_name VARCHAR(255),
+    product_cost DECIMAL(10,2),
+    product_markup_percent DECIMAL(5,2),
+    product_price DECIMAL(10,2)
+)
+
+-- Insert a new product into the temporary products table
+INSERT INTO #products (product_id, product_name, product_cost, product_markup_percent, product_price)
+VALUES (1, 'Test Product', 100.00, 20.00, 0.00)
+
+-- Initialize a cursor to fetch each product from the temporary table
 DECLARE product_cursor CURSOR FOR 
 SELECT product_id, product_name, product_cost, product_markup_percent
-FROM products
+FROM #products
 
 -- Open the cursor
 OPEN product_cursor
@@ -36,8 +52,8 @@ BEGIN
         -- Print the calculated price
         PRINT 'Product ID: ' + CAST(@productId AS VARCHAR) + ', Product Name: ' + @productName + ', Calculated Price: ' + CAST(@calculatedPrice AS VARCHAR)
 
-        -- Update the product price
-        UPDATE products
+        -- Update the product price in the temporary table
+        UPDATE #products
         SET product_price = @calculatedPrice
         WHERE product_id = @productId
 
@@ -70,3 +86,10 @@ END
 -- Close the cursor
 CLOSE product_cursor
 DEALLOCATE product_cursor
+
+-- Delete the updated product from the temporary table
+DELETE FROM #products
+WHERE product_id = 1
+
+-- Drop the temporary table
+DROP TABLE #products
